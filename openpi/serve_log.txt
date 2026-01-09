@@ -1,0 +1,23 @@
+warning: The `tool.uv.dev-dependencies` field (used in `packages/openpi-client/pyproject.toml`) is deprecated and will be removed in a future release; use `dependency-groups.dev` instead
+INFO:root:Loading model...
+INFO:openpi:train_config: TrainConfig(name='pi05_ygx', project_name='openpi', exp_name=<PropagatingMissingType id='140285964483856'>, model=Pi0Config(action_dim=32, action_horizon=50, max_token_len=200, dtype='bfloat16', paligemma_variant='gemma_2b', action_expert_variant='gemma_300m', pi05=True, discrete_state_input=True), weight_loader=CheckpointWeightLoader(params_path='/root/autodl-tmp/RoboParty_pi/openpi/openpi_data_home/openpi-assets/checkpoints/pi05_base/params'), pytorch_weight_path='/root/autodl-tmp/RoboParty_pi/openpi/openpi_data_home/openpi-assets/checkpoints/pi05_base_pytorch', pytorch_training_precision='bfloat16', lr_schedule=CosineDecaySchedule(warmup_steps=1000, peak_lr=2.5e-05, decay_steps=30000, decay_lr=2.5e-06), optimizer=AdamW(b1=0.9, b2=0.95, eps=1e-08, weight_decay=1e-10, clip_gradient_norm=1.0), ema_decay=0.99, freeze_filter=Nothing(), data=LeRobotYgxDataConfig(repo_id='/root/autodl-tmp/RoboParty_pi/openpi/hf_lerobot_home/ygx/stack_blocks_test_v1', assets=AssetsConfig(assets_dir=None, asset_id=None), base_config=DataConfig(repo_id=None, asset_id=None, norm_stats=None, repack_transforms=Group(inputs=[RepackTransform(structure={'image': {'cam_high': 'observation.images.cam_high', 'cam_left_wrist': 'observation.images.cam_left_wrist', 'cam_right_wrist': 'observation.images.cam_right_wrist'}, 'state': 'observation.state', 'actions': 'action', 'task': 'task'}), ConvertLeRobotImages(), TaskToPrompt()], outputs=()), data_transforms=Group(inputs=(), outputs=()), model_transforms=Group(inputs=(), outputs=()), use_quantile_norm=False, action_sequence_keys=('action',), prompt_from_task=False, rlds_data_dir=None, action_space=None, filter_dict_path=None), default_prompt=None), assets_base_dir='./assets', checkpoint_base_dir='./checkpoints', seed=42, batch_size=2, num_workers=0, num_train_steps=20000, log_interval=100, save_interval=1000, keep_period=5000, overwrite=False, resume=False, wandb_enabled=True, policy_metadata=None, fsdp_devices=1)
+Traceback (most recent call last):
+  File "/data0/syy_data/RoboParty_pi/openpi/scripts/serve_policy.py", line 122, in <module>
+    main(tyro.cli(Args))
+  File "/data0/syy_data/RoboParty_pi/openpi/scripts/serve_policy.py", line 100, in main
+    policy = create_policy(args)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/data0/syy_data/RoboParty_pi/openpi/scripts/serve_policy.py", line 92, in create_policy
+    return _policy_config.create_trained_policy(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data0/syy_data/RoboParty_pi/openpi/src/openpi/policies/policy_config.py", line 54, in create_trained_policy
+    model = train_config.model.load_pytorch(train_config, weight_path)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data0/syy_data/RoboParty_pi/openpi/src/openpi/models/model.py", line 245, in load_pytorch
+    model = pi0_pytorch.PI0Pytorch(config=train_config.model)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data0/syy_data/RoboParty_pi/openpi/src/openpi/models_pytorch/pi0_pytorch.py", line 140, in __init__
+    self.sample_actions = torch.compile(self.sample_actions, mode="max-autotune")
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data0/syy_data/RoboParty_pi/openpi/.venv/lib/python3.11/site-packages/torch/__init__.py", line 2562, in compile
+ModuleNotFoundError: No module named 'torch._inductor.compiler_bisector'

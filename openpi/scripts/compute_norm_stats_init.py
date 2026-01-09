@@ -1,0 +1,121 @@
+"""Compute normalization statistics for a config.
+
+This script is used to compute the normalization statistics for a given config. It
+will compute the mean and standard deviation of the data in the dataset and save it
+to the config assets directory.
+"""
+
+import numpy as np
+import tqdm
+import tyro
+
+import openpi.models.model as _model
+import openpi.shared.normalize as normalize
+import openpi.training.config as _config
+import openpi.training.data_loader as _data_loader
+import openpi.transforms as transforms
+
+
+class RemoveStrings(transforms.DataTransformFn):
+    def __call__(self, x: dict) -> dict:
+        return {k: v for k, v in x.items() if not np.issubdtype(np.asarray(v).dtype, np.str_)}
+
+
+def create_torch_dataloader(
+    data_config: _config.DataConfig,
+    action_horizon: int,
+    batch_size: int,
+    model_config: _model.BaseModelConfig,
+    num_workers: int,
+    max_frames: int | None = None,
+) -> tuple[_data_loader.Dataset, int]:
+    if data_config.repo_id is None:
+        raise ValueError("Data config must have a repo_id")
+    dataset = _data_loader.create_torch_dataset(data_config, action_horizon, model_config)
+    dataset = _data_loader.TransformedDataset(
+        dataset,
+        [
+            *data_config.repack_transforms.inputs,
+            *data_config.data_transforms.inputs,
+            # Remove strings since they are not supported by JAX and are not needed to compute norm stats.
+            RemoveStrings(),
+        ],
+    )
+    if max_frames is not None and max_frames < len(dataset):
+        num_batches = max_frames // batch_size
+        shuffle = True
+    else:
+        num_batches = len(dataset) // batch_size
+        shuffle = False
+    data_loader = _data_loader.TorchDataLoader(
+        dataset,
+        local_batch_size=batch_size,
+        num_workers=num_workers,
+        shuffle=shuffle,
+        num_batches=num_batches,
+    )
+    return data_loader, num_batches
+
+
+def create_rlds_dataloader(
+    data_config: _config.DataConfig,
+    action_horizon: int,
+    batch_size: int,
+    max_frames: int | None = None,
+) -> tuple[_data_loader.Dataset, int]:
+    dataset = _data_loader.create_rlds_dataset(data_config, action_horizon, batch_size, shuffle=False)
+    dataset = _data_loader.IterableTransformedDataset(
+        dataset,
+        [
+            *data_config.repack_transforms.inputs,
+            *data_config.data_transforms.inputs,
+            # Remove strings since they are not supported by JAX and are not needed to compute norm stats.
+            RemoveStrings(),
+        ],
+        is_batched=True,
+    )
+    if max_frames is not None and max_frames < len(dataset):
+        num_batches = max_frames // batch_size
+    else:
+        # NOTE: this length is currently hard-coded for DROID.
+        num_batches = len(dataset) // batch_size
+    data_loader = _data_loader.RLDSDataLoader(
+        dataset,
+        num_batches=num_batches,
+    )
+    return data_loader, num_batches
+
+
+def main(config_name: str, max_frames: int | None = None):
+    config = _config.get_config(config_name)  # 通过配置名获取完整训练配置
+    data_config = config.data.create(config.assets_dirs, config.model) # 生成数据配置（结合资产目录、模型配置）
+
+    if data_config.rlds_data_dir is not None: # # 若配置了 RLDS 数据目录，使用 RLDS 加载器
+        data_loader, num_batches = create_rlds_dataloader(
+            data_config, config.model.action_horizon, config.batch_size, max_frames
+        )
+    else: # 否则使用 PyTorch 风格加载器
+        data_loader, num_batches = create_torch_dataloader(
+            data_config, config.model.action_horizon, config.batch_size, config.model, config.num_workers, max_frames
+        )
+
+    # 初始化运行时统计器
+    keys = ["state", "actions"] # 只计算这两个关键字段的统计量
+    stats = {key: normalize.RunningStats() for key in keys} # 每个字段对应一个 RunningStats 实例
+
+    # 遍历数据集计算统计量
+    for batch in tqdm.tqdm(data_loader, total=num_batches, desc="Computing stats"):
+        for key in keys:
+            stats[key].update(np.asarray(batch[key]))
+
+
+    # 保存统计结果
+    norm_stats = {key: stats.get_statistics() for key, stats in stats.items()} # 提取最终统计量（mean + std）
+
+    output_path = config.assets_dirs / data_config.repo_id # 输出路径：资产目录 + 数据集 repo_id
+    print(f"Writing stats to: {output_path}")
+    normalize.save(output_path, norm_stats) # 保存到指定路径（项目封装的保存方法，可能为 pickle 或 json 格式）
+
+
+if __name__ == "__main__":
+    tyro.cli(main)

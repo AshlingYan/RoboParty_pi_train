@@ -1,0 +1,35 @@
+# 大文件目录
+openpi/checkpoints/
+openpi/hf_lerobot_home/
+openpi/openpi_data_home/
+openpi/examples/
+openpi/wandb/
+openpi/third_party/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+
+# 环境
+.env
+.venv
+env/
+venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 其他
+*.log
+.DS_Store

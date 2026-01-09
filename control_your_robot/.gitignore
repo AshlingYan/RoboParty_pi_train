@@ -1,0 +1,32 @@
+# Ignore all .pyc files
+*.pyc
+
+# Ignore __pycache__ directory
+__pycache__/
+
+# Ignore other Python cache files
+*.pyo
+*.pyd
+
+# datasets
+datasets/
+save/
+
+# example/teleop
+
+# third_party
+third_party/3D-ViTac_Tactile_Hardware
+third_party/dr/
+
+execution_logs/
+output/
+data/check_data.json
+policy/weights
+realsense_captures/
+piper_scripts/
+third_party/test.py
+policy/ACT/act_ckpt
+policy/ACT/detr/detr.egg-info
+controller/URUrx_controller.py
+processed_data/*
+test/*
