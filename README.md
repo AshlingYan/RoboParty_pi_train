@@ -1,6 +1,3 @@
-以下是为你优化后的 GitHub README 文档，采用了更可爱、易读的风格，添加了图标、分区、醒目提示和清晰的步骤指引，直接复制即可使用：
-
-```markdown
 # 🤖 RoboParty_pi_train 使用指南
 > 超详细的训练环境配置 & 运行教程，新手友好版 💖
 
@@ -81,7 +78,7 @@ uv run scripts/train_pytorch.py pi05_ygx --exp_name stack_blocks_three_merged --
 
 ## 📄 许可证
 （如果有需要，可在此添加项目许可证信息）
-```
+
 
 ### 总结
 1. 文档新增了 emoji 图标、表格、提示框等元素，视觉上更友好，重点信息更突出；
